@@ -1,0 +1,25 @@
+with discount_table as (
+select 
+p.product_id 
+,SUM(op.item_quantity) as quantity
+,pg.category
+,round(sum(p.product_price * op.item_quantity*(1-op.position_discount)),2) as revenue_with_discount
+from products p
+left join order_positions op on op.product_id = p.product_id
+left join product_groups pg on p.group_id = pg.group_id
+where position_discount > 0
+group by 1,3
+)
+--  Ranking: Select the top 3 best-selling products by quantity for each category
+select * from
+(select 
+product_id 
+,category
+,sum(quantity) as total_quantity
+,row_number() over (partition by category order by sum(quantity) desc) as top_seller
+from discount_table
+group by 1,2) as top
+where top_seller <= 3
+
+
+
